@@ -72,11 +72,18 @@ final class MovieQuizViewController: UIViewController {
     }
     
     private var logger = Logger()
+    
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        return .lightContent
+    }
         
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        showNextQuestionOrResults()
+        let question = questions[currentQuestionIndex]
+        let convertedToModel = convert(model: question)
+        show(quiz: convertedToModel)
+        imageView.layer.cornerRadius = 20
     }
     
     @IBAction private func noButtonClicked(_ sender: UIButton) {
@@ -103,7 +110,6 @@ final class MovieQuizViewController: UIViewController {
     private func showAnswerResult(isCorrect: Bool) {
         imageView.layer.masksToBounds = true
         imageView.layer.borderWidth = 8
-        imageView.layer.cornerRadius = 20
         imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
         
         disableButtons()
@@ -133,47 +139,49 @@ final class MovieQuizViewController: UIViewController {
         
         enableButtons()
         
-        func getResultViewModel(from resultRecord: ResultsRecord) -> QuizResultsViewModel {
-            var text = "Ваш результат: \(correctAnswers)/10"
+        
+    }
+    
+    func getResultViewModel(from resultRecord: ResultsRecord) -> QuizResultsViewModel {
+        var text = "Ваш результат: \(correctAnswers)/10"
+        
+        let numberOfQuizes = logger.getNumberOfRecords()
+        text += "\nКоличество сыгранных квизов: \(numberOfQuizes)"
+        
+        if let bestResult = logger.getBestResult() {
+            let numberOfCorrectAnswers = bestResult.numberOfCorrectAnswers
+            let numberOfqQuestions = bestResult.numberOfqQuestions
+            let dateString = formattedString(for: bestResult.date)
             
-            let numberOfQuizes = logger.getNumberOfRecords()
-            text += "\nКоличество сыгранных квизов: \(numberOfQuizes)"
-            
-            if let bestResult = logger.getBestResult() {
-                let numberOfCorrectAnswers = bestResult.numberOfCorrectAnswers
-                let numberOfqQuestions = bestResult.numberOfqQuestions
-                let dateString = formattedString(for: bestResult.date)
-                
-                text += "\nРекорд: \(numberOfCorrectAnswers)/\(numberOfqQuestions) (\(dateString))"
-            }
-            
-            let averageAccuracy = logger.getAverageAccuracy()
-            let accuracyString = getPercentageString(for: averageAccuracy)
-            text += "\nСредняя точность: \(accuracyString)%"
-            
-            let viewModel = QuizResultsViewModel(
-                        title: "Этот раунд окончен!",
-                        text: text,
-                        buttonText: "Сыграть ещё раз")
-            return viewModel
-            
-            func formattedString(for date: Date) -> String {
-                let formatter = DateFormatter()
-                formatter.dateStyle = .short
-                formatter.timeStyle = .short
-                
-                let formattedString = formatter.string(from: date)
-                return formattedString
-            }
-            
-            func getPercentageString(for percentage: Float) -> String {
-                let formatter = NumberFormatter()
-                formatter.numberStyle = .decimal
-                formatter.maximumFractionDigits = 2
-                
-                return formatter.string(from: percentage as NSNumber)!
-            }
+            text += "\nРекорд: \(numberOfCorrectAnswers)/\(numberOfqQuestions) (\(dateString))"
         }
+        
+        let averageAccuracy = logger.getAverageAccuracy()
+        let accuracyString = getPercentageString(for: averageAccuracy)
+        text += "\nСредняя точность: \(accuracyString)%"
+        
+        let viewModel = QuizResultsViewModel(
+                    title: "Этот раунд окончен!",
+                    text: text,
+                    buttonText: "Сыграть ещё раз")
+        return viewModel
+    }
+    
+    func formattedString(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        
+        let formattedString = formatter.string(from: date)
+        return formattedString
+    }
+    
+    func getPercentageString(for percentage: Float) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 2
+        
+        return formatter.string(from: percentage as NSNumber)!
     }
     
     private func show(quiz result: QuizResultsViewModel) {
