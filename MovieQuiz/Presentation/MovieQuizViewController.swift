@@ -1,6 +1,9 @@
 import UIKit
 
-final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
+final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, AlertPreseterDelegate {
+    
+    // MARK: - Outlets
+    
     @IBOutlet private weak var imageView: UIImageView!
     
     @IBOutlet private weak var textLabel: UILabel!
@@ -11,26 +14,19 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     @IBOutlet private weak var noButton: UIButton!
     
+    // MARK: - Properties
+    
     private let questionsAmount = 10
-    private var questionFactory: QuestionFactoryProtocol?
+            
     private var currentQuestion: QuizQuestion?
     
     private var currentQuestionIndex = 0
     
-    private var correctAnswers = 0
-        
-    private func convert(model: QuizQuestion) -> QuizStepViewModel {
-        QuizStepViewModel(image: UIImage(named: model.image) ?? UIImage(),
-                          question: model.text,
-                          questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
+    private var isGameFinished: Bool {
+        currentQuestionIndex == questionsAmount - 1
     }
     
-    private func show(quiz step: QuizStepViewModel) {
-        imageView.image = step.image
-        textLabel.text = step.question
-        counterLabel.text = step.questionNumber
-        imageView.layer.borderWidth = 0
-    }
+    private var correctAnswers = 0
     
     private var logger = Logger()
     
@@ -44,12 +40,14 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         super.viewDidLoad()
         questionFactory = QuestionFactory()
         questionFactory?.delegate = self
-        
+                
         questionFactory?.requestNextQuestion()
         imageView.layer.cornerRadius = 20
     }
     
     // MARK: - QuestionFactoryDelegate
+    
+    private var questionFactory: QuestionFactoryProtocol?
     
     func didReceiveNextQuestion(question: QuizQuestion?) {
         guard let question = question else { return }
@@ -61,6 +59,14 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         }
     }
     
+    // MARK: - AlertPreseterDelegate
+    
+    private var alertPresenter: AlertPresenterProtocol?
+    
+    func didDismissResultAlert() {
+        restartQuiz()
+    }
+    
     // MARK: - Actions
     
     @IBAction private func noButtonClicked(_ sender: UIButton) {
@@ -70,6 +76,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     @IBAction private func yesButtonClicked(_ sender: UIButton) {
         handle(givenAnswer: true)
     }
+    
+    // MARK: - Methods
     
     func getResultViewModel(from resultRecord: ResultsRecord) -> QuizResultsViewModel {
         var text = "Ваш результат: \(correctAnswers)/10"
@@ -113,7 +121,56 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         return formatter.string(from: percentage as NSNumber)!
     }
         
-    // MARK: - Private functions
+    // MARK: - Private Methods
+    
+    private func showNextQuestionOrResults() {
+        
+        guard !isGameFinished else {
+            showFinishAlert()
+            return
+        }
+        
+        moveToNextQuestion()
+        
+        enableButtons()
+    }
+    
+    private func moveToNextQuestion() {
+        currentQuestionIndex += 1
+        
+        questionFactory?.requestNextQuestion()
+    }
+        
+    private func showFinishAlert() {
+        let resultRecord = ResultsRecord(numberOfCorrectAnswers: correctAnswers,
+                                         numberOfqQuestions: questionsAmount,
+                                         date: Date())
+        logger.add(resultRecord)
+        
+        let resultViewModel = getResultViewModel(from: resultRecord)
+        
+        alertPresenter = AlertPresenter()
+        alertPresenter?.delegate = self
+        
+        let alertModel = AlertModel(title: resultViewModel.title,
+                                    message: resultViewModel.text,
+                                    buttonText: resultViewModel.buttonText) { }
+        
+        alertPresenter?.show(alertModel)
+    }
+    
+    private func restartQuiz() {
+        currentQuestionIndex = 0
+        correctAnswers = 0
+        questionFactory?.requestNextQuestion()
+    }
+    
+    private func show(quiz step: QuizStepViewModel) {
+        imageView.image = step.image
+        textLabel.text = step.question
+        counterLabel.text = step.questionNumber
+        imageView.layer.borderWidth = 0
+    }
     
     private func handle(givenAnswer: Bool) {
         
@@ -141,44 +198,11 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             self.showNextQuestionOrResults()
         }
     }
-    
-    private func showNextQuestionOrResults() {
-        if currentQuestionIndex == questionsAmount - 1 {
-            
-            let resultRecord = ResultsRecord(numberOfCorrectAnswers: correctAnswers,
-                                             numberOfqQuestions: questionsAmount,
-                                             date: Date())
-            logger.add(resultRecord)
-            
-            let resultViewModel = getResultViewModel(from: resultRecord)
-            
-            show(quiz: resultViewModel)
-        } else {
-            currentQuestionIndex += 1
-            
-            questionFactory?.requestNextQuestion()
-        }
         
-        enableButtons()
-        
-    }
-    
-    private func show(quiz result: QuizResultsViewModel) {
-        let alert = UIAlertController(title: result.title,
-                                      message: result.text,
-                                      preferredStyle: .alert)
-        let action = UIAlertAction(title: result.buttonText, style: .default) { [weak self] _ in
-            guard let self = self else { return }
-            
-            self.currentQuestionIndex = 0
-            self.correctAnswers = 0
-            
-            questionFactory?.requestNextQuestion()
-        }
-        
-        alert.addAction(action)
-        
-        self.present(alert, animated: true, completion: nil)
+    private func convert(model: QuizQuestion) -> QuizStepViewModel {
+        QuizStepViewModel(image: UIImage(named: model.image) ?? UIImage(),
+                          question: model.text,
+                          questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
     }
     
     private func disableButtons() {
@@ -189,56 +213,5 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     private func enableButtons() {
         yesButton.isEnabled = true
         noButton.isEnabled = true
-    }
-    
-    struct Logger {
-        
-        private var records: [ResultsRecord] = []
-        
-        mutating func add(_ record: ResultsRecord) {
-            records.append(record)
-        }
-        
-        func getNumberOfRecords() -> Int {
-            records.count
-        }
-        
-        func getBestResult() -> ResultsRecord? {
-            guard var bestResult = records.first else { return nil }
-            
-            let numberOfQuizes = records.count
-            
-            for index in 1..<numberOfQuizes {
-                let record = records[index]
-                if record.accuracy > bestResult.accuracy {
-                    bestResult = record
-                }
-            }
-            
-            return bestResult
-        }
-        
-        func getAverageAccuracy() -> Float {
-            var quizPercentages: [Float] = []
-
-            for record in records {
-                quizPercentages.append(record.accuracy)
-            }
-            
-            let totalQuizzes = records.count
-            let totalPercentage = quizPercentages.reduce(0, +) / Float(totalQuizzes)
-                                    
-            return totalPercentage
-        }
-    }
-    
-    struct ResultsRecord {
-        let numberOfCorrectAnswers: Int
-        let numberOfqQuestions: Int
-        let date: Date
-        
-        var accuracy: Float {
-            Float(numberOfCorrectAnswers) / Float(numberOfqQuestions) * 100
-        }
     }
 }
