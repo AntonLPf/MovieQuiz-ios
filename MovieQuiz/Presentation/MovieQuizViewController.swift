@@ -1,6 +1,6 @@
 import UIKit
 
-final class MovieQuizViewController: UIViewController {
+final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     @IBOutlet private weak var imageView: UIImageView!
     
     @IBOutlet private weak var textLabel: UILabel!
@@ -12,7 +12,7 @@ final class MovieQuizViewController: UIViewController {
     @IBOutlet private weak var noButton: UIButton!
     
     private let questionsAmount = 10
-    private var questionFactory: QuestionFactoryProtocol = QuestionFactory()
+    private var questionFactory: QuestionFactoryProtocol?
     private var currentQuestion: QuizQuestion?
     
     private var currentQuestionIndex = 0
@@ -39,15 +39,29 @@ final class MovieQuizViewController: UIViewController {
     }
         
     // MARK: - Lifecycle
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        if let firstQuestion = questionFactory.requestNextQuestion() {
-            currentQuestion = firstQuestion
-            let convertedToModel = convert(model: firstQuestion)
-            show(quiz: convertedToModel)
-        }
+        questionFactory = QuestionFactory()
+        questionFactory?.delegate = self
+        
+        questionFactory?.requestNextQuestion()
         imageView.layer.cornerRadius = 20
     }
+    
+    // MARK: - QuestionFactoryDelegate
+    
+    func didReceiveNextQuestion(question: QuizQuestion?) {
+        guard let question = question else { return }
+        
+        currentQuestion = question
+        let viewModel = convert(model: question)
+        DispatchQueue.main.async { [weak self] in
+            self?.show(quiz: viewModel)
+        }
+    }
+    
+    // MARK: - Actions
     
     @IBAction private func noButtonClicked(_ sender: UIButton) {
         handle(givenAnswer: false)
@@ -55,59 +69,6 @@ final class MovieQuizViewController: UIViewController {
     
     @IBAction private func yesButtonClicked(_ sender: UIButton) {
         handle(givenAnswer: true)
-    }
-    
-    private func handle(givenAnswer: Bool) {
-        
-        guard let currentQuestion else { return }
-        
-        let isCorrect = currentQuestion.correctAnswer == givenAnswer
-        
-        if isCorrect {
-            correctAnswers += 1
-        }
-        
-        showAnswerResult(isCorrect: isCorrect)
-    }
-    
-    private func showAnswerResult(isCorrect: Bool) {
-        imageView.layer.masksToBounds = true
-        imageView.layer.borderWidth = 8
-        imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
-        
-        disableButtons()
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self = self else { return }
-            
-            self.showNextQuestionOrResults()
-        }
-    }
-    
-    private func showNextQuestionOrResults() {
-        if currentQuestionIndex == questionsAmount - 1 {
-            
-            let resultRecord = ResultsRecord(numberOfCorrectAnswers: correctAnswers,
-                                             numberOfqQuestions: questionsAmount,
-                                             date: Date())
-            logger.add(resultRecord)
-            
-            let resultViewModel = getResultViewModel(from: resultRecord)
-            
-            show(quiz: resultViewModel)
-        } else {
-            currentQuestionIndex += 1
-            if let nextQuestion = questionFactory.requestNextQuestion() {
-                currentQuestion = nextQuestion
-                let viewModel = convert(model: nextQuestion)
-
-                show(quiz: viewModel)
-            }
-        }
-        
-        enableButtons()
-        
-        
     }
     
     func getResultViewModel(from resultRecord: ResultsRecord) -> QuizResultsViewModel {
@@ -151,6 +112,56 @@ final class MovieQuizViewController: UIViewController {
         
         return formatter.string(from: percentage as NSNumber)!
     }
+        
+    // MARK: - Private functions
+    
+    private func handle(givenAnswer: Bool) {
+        
+        guard let currentQuestion else { return }
+        
+        let isCorrect = currentQuestion.correctAnswer == givenAnswer
+        
+        if isCorrect {
+            correctAnswers += 1
+        }
+        
+        showAnswerResult(isCorrect: isCorrect)
+    }
+    
+    private func showAnswerResult(isCorrect: Bool) {
+        imageView.layer.masksToBounds = true
+        imageView.layer.borderWidth = 8
+        imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
+        
+        disableButtons()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self = self else { return }
+            
+            self.showNextQuestionOrResults()
+        }
+    }
+    
+    private func showNextQuestionOrResults() {
+        if currentQuestionIndex == questionsAmount - 1 {
+            
+            let resultRecord = ResultsRecord(numberOfCorrectAnswers: correctAnswers,
+                                             numberOfqQuestions: questionsAmount,
+                                             date: Date())
+            logger.add(resultRecord)
+            
+            let resultViewModel = getResultViewModel(from: resultRecord)
+            
+            show(quiz: resultViewModel)
+        } else {
+            currentQuestionIndex += 1
+            
+            questionFactory?.requestNextQuestion()
+        }
+        
+        enableButtons()
+        
+    }
     
     private func show(quiz result: QuizResultsViewModel) {
         let alert = UIAlertController(title: result.title,
@@ -162,12 +173,7 @@ final class MovieQuizViewController: UIViewController {
             self.currentQuestionIndex = 0
             self.correctAnswers = 0
             
-            if let firstQuestion = self.questionFactory.requestNextQuestion() {
-                self.currentQuestion = firstQuestion
-                let viewModel = self.convert(model: firstQuestion)
-
-                self.show(quiz: viewModel)
-            }
+            questionFactory?.requestNextQuestion()
         }
         
         alert.addAction(action)
