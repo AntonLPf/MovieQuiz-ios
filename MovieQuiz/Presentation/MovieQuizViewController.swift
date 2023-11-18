@@ -28,7 +28,9 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     
     private var correctAnswers = 0
     
-    private var logger = Logger()
+    private var staticticService: StatisticService?
+    
+    private var storageService: StorageProtocol?
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
@@ -43,6 +45,10 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
                 
         questionFactory?.requestNextQuestion()
         imageView.layer.cornerRadius = 20
+        
+        let storageService = Storage()
+        self.storageService = storageService
+        staticticService = StatisticServiceImplementation(store: storageService)
     }
     
     // MARK: - QuestionFactoryDelegate
@@ -65,6 +71,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     
     func didDismissResultAlert() {
         restartQuiz()
+        enableButtons()
     }
     
     // MARK: - Actions
@@ -79,21 +86,21 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     
     // MARK: - Methods
     
-    func getResultViewModel(from resultRecord: ResultsRecord) -> QuizResultsViewModel {
+    func getResultViewModel(from gameRecord: GameRecord) -> QuizResultsViewModel {
         var text = "Ваш результат: \(correctAnswers)/10"
         
-        let numberOfQuizes = logger.getNumberOfRecords()
+        let numberOfQuizes = staticticService?.gamesCount ?? 0
         text += "\nКоличество сыгранных квизов: \(numberOfQuizes)"
         
-        if let bestResult = logger.getBestResult() {
-            let numberOfCorrectAnswers = bestResult.numberOfCorrectAnswers
-            let numberOfqQuestions = bestResult.numberOfqQuestions
+        if let bestResult = staticticService?.bestGame {
+            let numberOfCorrectAnswers = bestResult.correctAnswersCount
+            let numberOfqQuestions = bestResult.questionsCount
             let dateString = formattedString(for: bestResult.date)
             
             text += "\nРекорд: \(numberOfCorrectAnswers)/\(numberOfqQuestions) (\(dateString))"
         }
         
-        let averageAccuracy = logger.getAverageAccuracy()
+        let averageAccuracy = staticticService?.totalAccuracy ?? 0.0
         let accuracyString = getPercentageString(for: averageAccuracy)
         text += "\nСредняя точность: \(accuracyString)%"
         
@@ -126,7 +133,13 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     private func showNextQuestionOrResults() {
         
         guard !isGameFinished else {
-            showFinishAlert()
+            let resultRecord = GameRecord(correctAnswersCount: correctAnswers, questionsCount: questionsAmount, date: Date())
+            
+            try? storageService?.addNew(record: resultRecord)
+            
+            let resultViewModel = getResultViewModel(from: resultRecord)
+
+            showFinishAlert(model: resultViewModel)
             return
         }
         
@@ -141,20 +154,13 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         questionFactory?.requestNextQuestion()
     }
         
-    private func showFinishAlert() {
-        let resultRecord = ResultsRecord(numberOfCorrectAnswers: correctAnswers,
-                                         numberOfqQuestions: questionsAmount,
-                                         date: Date())
-        logger.add(resultRecord)
-        
-        let resultViewModel = getResultViewModel(from: resultRecord)
-        
+    private func showFinishAlert(model: QuizResultsViewModel) {
         alertPresenter = AlertPresenter()
         alertPresenter?.delegate = self
         
-        let alertModel = AlertModel(title: resultViewModel.title,
-                                    message: resultViewModel.text,
-                                    buttonText: resultViewModel.buttonText) { }
+        let alertModel = AlertModel(title: model.title,
+                                    message: model.text,
+                                    buttonText: model.buttonText) { }
         
         alertPresenter?.show(alertModel)
     }
