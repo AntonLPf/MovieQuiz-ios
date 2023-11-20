@@ -26,7 +26,11 @@ class StatisticServiceImplementation: StatisticService {
             }
             
             let totalRecords = db.records.count
-            let totalPercentage = quizPercentages.reduce(0, +) / Float(totalRecords)
+            
+            var totalPercentage: Float = 0.0
+            if totalRecords > 0 {
+                totalPercentage = quizPercentages.reduce(0, +) / Float(totalRecords)
+            }
             result = totalPercentage
         }
 

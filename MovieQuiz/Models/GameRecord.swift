@@ -21,6 +21,6 @@ struct GameRecord: Codable, Identifiable {
     }
     
     var accuracy: Float {
-        Float(correctAnswersCount) / Float(questionsCount) * 100
+        questionsCount > 0 ? Float(correctAnswersCount) / Float(questionsCount) * 100 : 0
     }
 }
