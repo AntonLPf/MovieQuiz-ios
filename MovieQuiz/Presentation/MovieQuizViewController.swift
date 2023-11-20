@@ -101,8 +101,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         }
         
         let averageAccuracy = staticticService?.totalAccuracy ?? 0.0
-        let accuracyString = getPercentageString(for: averageAccuracy)
-        text += "\nСредняя точность: \(accuracyString)%"
+        text += "\nСредняя точность: \(String(format: "%.2f", averageAccuracy))%"
         
         let viewModel = QuizResultsViewModel(
                     title: "Этот раунд окончен!",
@@ -119,15 +118,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         let formattedString = formatter.string(from: date)
         return formattedString
     }
-    
-    func getPercentageString(for percentage: Float) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 2
-        
-        return formatter.string(from: percentage as NSNumber)!
-    }
-        
+            
     // MARK: - Private Methods
     
     private func showNextQuestionOrResults() {
