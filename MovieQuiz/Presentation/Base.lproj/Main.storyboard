@@ -105,6 +105,9 @@
                                     </stackView>
                                 </subviews>
                             </stackView>
+                            <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="medium" translatesAutoresizingMaskIntoConstraints="NO" id="fBX-xN-CJH">
+                                <rect key="frame" x="197" y="438" width="20" height="20"/>
+                            </activityIndicatorView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" name="YP Black"/>
@@ -113,9 +116,12 @@
                             <constraint firstItem="91z-Lk-zdr" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="10" id="LWE-uV-WW3"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="bottom" secondItem="91z-Lk-zdr" secondAttribute="bottom" id="M6f-5w-CIB"/>
                             <constraint firstItem="91z-Lk-zdr" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="20" id="USd-dx-HhO"/>
+                            <constraint firstItem="fBX-xN-CJH" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="tr3-ol-sn7"/>
+                            <constraint firstItem="fBX-xN-CJH" firstAttribute="centerY" secondItem="8bC-Xf-vdC" secondAttribute="centerY" id="zxz-3L-3Uw"/>
                         </constraints>
                     </view>
                     <connections>
+                        <outlet property="activityIndicator" destination="fBX-xN-CJH" id="BPA-mu-kzx"/>
                         <outlet property="counterLabel" destination="bg2-vd-m6m" id="S4l-Hb-uz4"/>
                         <outlet property="imageView" destination="d3K-iq-5U3" id="UpC-dL-LqU"/>
                         <outlet property="noButton" destination="f0y-5P-1tR" id="v5v-pA-Mt3"/>
