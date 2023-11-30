@@ -41,16 +41,21 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
+        
         super.viewDidLoad()
+        
         imageView.layer.cornerRadius = 20
+        
+        showLoadingIndicator()
         
         questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
         
         let storageService = Storage()
+        
         self.storageService = storageService
+        
         staticticService = StatisticServiceImplementation(store: storageService)
         
-        showLoadingIndicator()
         questionFactory?.loadData()
     }
     
