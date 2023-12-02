@@ -46,9 +46,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         
         imageView.layer.cornerRadius = 20
         
-        showLoadingIndicator()
-        
-        questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
+        questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), imageLoader: ImageLoader(), delegate: self)
         
         let storageService = Storage()
         
@@ -56,7 +54,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         
         staticticService = StatisticServiceImplementation(store: storageService)
         
-        questionFactory?.loadData()
+        loadData()
     }
     
     // MARK: - QuestionFactoryDelegate
@@ -64,12 +62,14 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     private var questionFactory: QuestionFactoryProtocol?
     
     func didReceiveNextQuestion(question: QuizQuestion?) {
-        guard let question = question else { return }
+        guard let question else { return }
         
         currentQuestion = question
         let viewModel = convert(model: question)
         DispatchQueue.main.async { [weak self] in
+            self?.currentQuestionIndex += 1
             self?.show(quiz: viewModel)
+            self?.enableButtons()
         }
     }
     
@@ -80,7 +80,12 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     
     func didFailToLoadData(with error: Error) {
         hideLoadingIndicator()
-        showNetworkError(message: error.localizedDescription)
+        showNetworkError(message: error.localizedDescription, alertType: .networkError)
+    }
+    
+    func didFailLoadQuestion() {
+        hideLoadingIndicator()
+        showNetworkError(message: "Не удалось загрузить вопрос", alertType: .questionLoadingError)
     }
     
     // MARK: - AlertPreseterDelegate
@@ -90,6 +95,15 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     func didDismissResultAlert() {
         restartQuiz()
         enableButtons()
+    }
+    
+    func didDismissNetworkErrorAlert() {
+        loadData()
+        restartQuiz()
+    }
+    
+    func didDismissQuestionLoadingErrorAlert() {
+        moveToNextStep()
     }
     
     // MARK: - Actions
@@ -139,28 +153,34 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
             
     // MARK: - Private Methods
     
-    private func showNextQuestionOrResults() {
+    private func loadData() {
+        showLoadingIndicator()
+        questionFactory?.loadData()
+    }
+    
+    private func moveToNextStep() {
         
         guard !isGameFinished else {
-            let resultRecord = GameRecord(correctAnswersCount: correctAnswers, questionsCount: questionsAmount, date: Date())
-            
-            try? storageService?.addNew(record: resultRecord)
-            
-            let resultViewModel = getResultViewModel(from: resultRecord)
-
-            showFinishAlert(model: resultViewModel)
+            showQuizResults()
             return
         }
         
         moveToNextQuestion()
+    }
+    
+    private func showQuizResults() {
+        let resultRecord = GameRecord(correctAnswersCount: correctAnswers, questionsCount: questionsAmount, date: Date())
         
-        enableButtons()
+        try? storageService?.addNew(record: resultRecord)
+        
+        let resultViewModel = getResultViewModel(from: resultRecord)
+
+        showFinishAlert(model: resultViewModel)
     }
     
     private func moveToNextQuestion() {
-        currentQuestionIndex += 1
-        
         showLoadingIndicator()
+        
         questionFactory?.requestNextQuestion()
     }
         
@@ -170,7 +190,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         
         let alertModel = AlertModel(title: model.title,
                                     message: model.text,
-                                    buttonText: model.buttonText) { }
+                                    buttonText: model.buttonText,
+                                    type: .result) { }
         
         alertPresenter?.show(alertModel)
     }
@@ -187,11 +208,14 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         textLabel.text = step.question
         counterLabel.text = step.questionNumber
         imageView.layer.borderWidth = 0
+        enableButtons()
     }
     
     private func handle(givenAnswer: Bool) {
         
         guard let currentQuestion else { return }
+        
+        disableButtons()
         
         let isCorrect = currentQuestion.correctAnswer == givenAnswer
         
@@ -207,12 +231,10 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         imageView.layer.borderWidth = 8
         imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
         
-        disableButtons()
-        
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             guard let self = self else { return }
             
-            self.showNextQuestionOrResults()
+            self.moveToNextStep()
         }
     }
         
@@ -242,20 +264,13 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         activityIndicator.stopAnimating()
     }
     
-    private func showNetworkError(message: String) {
-        hideLoadingIndicator()
-        
+    private func showNetworkError(message: String, alertType: AlertModel.AlertType) {
         alertPresenter = AlertPresenter()
         alertPresenter?.delegate = self
         
         let alertModel = AlertModel(title: "Ошибка",
                                     message: message,
-                                    buttonText: "Попробовать ещё раз") { [weak self] in
-            guard let self = self else { return }
-            
-            restartQuiz()
-            
-        }
+                                    buttonText: "Попробовать ещё раз", type: alertType) {}
         
         alertPresenter?.show(alertModel)
     }

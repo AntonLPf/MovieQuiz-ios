@@ -14,9 +14,20 @@ class AlertPresenter: AlertPresenterProtocol {
         let alert = UIAlertController(title: model.title,
                                       message: model.message,
                                       preferredStyle: .alert)
-                
-        let action = UIAlertAction(title: model.buttonText, style: .default) { _ in
-            self.delegate?.didDismissResultAlert()
+        
+        let action: UIAlertAction = switch model.type {
+        case .result:
+            UIAlertAction(title: model.buttonText, style: .default) { _ in
+                self.delegate?.didDismissResultAlert()
+            }
+        case .networkError:
+            UIAlertAction(title: model.buttonText, style: .default) { _ in
+                self.delegate?.didDismissNetworkErrorAlert()
+            }
+        case .questionLoadingError:
+            UIAlertAction(title: model.buttonText, style: .default) { _ in
+                self.delegate?.didDismissQuestionLoadingErrorAlert()
+            }
         }
         
         alert.addAction(action)

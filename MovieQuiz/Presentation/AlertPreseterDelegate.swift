@@ -11,4 +11,8 @@ protocol AlertPreseterDelegate: UIViewController {
     
     func didDismissResultAlert()
     
+    func didDismissNetworkErrorAlert()
+    
+    func didDismissQuestionLoadingErrorAlert()
+    
 }

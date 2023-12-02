@@ -15,6 +15,14 @@ struct AlertModel {
     
     let buttonText: String
     
+    let type: AlertType
+    
     let completion: () -> ()
+    
+    enum AlertType {
+        case result
+        case networkError
+        case questionLoadingError
+    }
     
 }

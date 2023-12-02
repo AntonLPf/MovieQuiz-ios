@@ -8,8 +8,8 @@
 import Foundation
 
 struct NetworkClient {
-
-    private enum NetworkError: Error {
+    
+    enum NetworkError: Error {
         case codeError
     }
     

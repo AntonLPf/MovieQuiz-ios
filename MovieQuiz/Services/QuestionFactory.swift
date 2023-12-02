@@ -11,10 +11,13 @@ class QuestionFactory: QuestionFactoryProtocol {
     
     private let moviesLoader: MoviesLoading
     
+    private let imageLoader: ImageLoading
+    
     weak var delegate: QuestionFactoryDelegate?
     
-    init(moviesLoader: MoviesLoading, delegate: QuestionFactoryDelegate?) {
+    init(moviesLoader: MoviesLoading, imageLoader: ImageLoading, delegate: QuestionFactoryDelegate?) {
         self.moviesLoader = moviesLoader
+        self.imageLoader = imageLoader
         self.delegate = delegate
     }
     
@@ -85,14 +88,14 @@ class QuestionFactory: QuestionFactoryProtocol {
             
             guard let movie = self.movies[safe: index] else { return }
             
-            var imageData = Data()
-            
-            do {
-                imageData = try Data(contentsOf: movie.resizedImageURL)
-            } catch {
-                print("Failed to load image")
+            guard let imageData: Data = try? imageLoader.loadImageData(for: movie) else {
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    self.delegate?.didFailLoadQuestion()
+                }
+                return
             }
-            
+
             let rating = Float(movie.rating) ?? 0
             
             let text = "Рейтинг этого фильма больше чем 7?"
