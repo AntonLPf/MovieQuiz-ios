@@ -24,8 +24,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     
     private var currentQuestionIndex = 0
     
-    private var isGameFinished: Bool {
-        currentQuestionIndex == questionsAmount - 1
+    private var isQuizFinished: Bool {
+        currentQuestionIndex == questionsAmount
     }
     
     private var correctAnswers = 0
@@ -127,7 +127,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         if let bestResult = staticticService?.bestGame {
             let numberOfCorrectAnswers = bestResult.correctAnswersCount
             let numberOfqQuestions = bestResult.questionsCount
-            let dateString = formattedString(for: bestResult.date)
+            let dateString = getFormattedString(for: bestResult.date)
             
             text += "\nРекорд: \(numberOfCorrectAnswers)/\(numberOfqQuestions) (\(dateString))"
         }
@@ -142,7 +142,9 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         return viewModel
     }
     
-    func formattedString(for date: Date) -> String {
+    // MARK: - Private Methods
+    
+    private func getFormattedString(for date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
         formatter.timeStyle = .short
@@ -151,8 +153,6 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         return formattedString
     }
     
-    // MARK: - Private Methods
-    
     private func loadData() {
         showLoadingIndicator()
         questionFactory?.loadData()
@@ -160,7 +160,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     
     private func moveToNextStep() {
         
-        guard !isGameFinished else {
+        guard !isQuizFinished else {
             showQuizResults()
             return
         }
