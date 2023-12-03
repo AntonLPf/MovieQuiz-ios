@@ -31,10 +31,10 @@ class UserDefaultsManager {
             print(error)
             throw error
         }
-
+        
         userDefaults.set(data, forKey: key)
     }
-        
+    
     func load<T: Codable>(key: String,_ type: T.Type) throws -> Codable {
         guard let data = userDefaults.data(forKey: key),
               let loadedResult = try? JSONDecoder().decode(type, from: data) else {
@@ -42,7 +42,7 @@ class UserDefaultsManager {
             print(error)
             throw error
         }
-
+        
         return loadedResult
     }
 }

@@ -10,6 +10,6 @@ import Foundation
 protocol AlertPresenterProtocol {
     
     var delegate: AlertPreseterDelegate? { get set }
-
+    
     func show(_ result: AlertModel)
 }

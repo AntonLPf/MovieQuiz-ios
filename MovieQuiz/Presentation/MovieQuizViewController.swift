@@ -19,7 +19,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     // MARK: - Properties
     
     private let questionsAmount = 10
-            
+    
     private var currentQuestion: QuizQuestion?
     
     private var currentQuestionIndex = 0
@@ -37,7 +37,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
     }
-        
+    
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
@@ -136,9 +136,9 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         text += "\nСредняя точность: \(String(format: "%.2f", averageAccuracy))%"
         
         let viewModel = QuizResultsViewModel(
-                    title: "Этот раунд окончен!",
-                    text: text,
-                    buttonText: "Сыграть ещё раз")
+            title: "Этот раунд окончен!",
+            text: text,
+            buttonText: "Сыграть ещё раз")
         return viewModel
     }
     
@@ -150,7 +150,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         let formattedString = formatter.string(from: date)
         return formattedString
     }
-            
+    
     // MARK: - Private Methods
     
     private func loadData() {
@@ -174,7 +174,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         try? storageService?.addNew(record: resultRecord)
         
         let resultViewModel = getResultViewModel(from: resultRecord)
-
+        
         showFinishAlert(model: resultViewModel)
     }
     
@@ -183,7 +183,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         
         questionFactory?.requestNextQuestion()
     }
-        
+    
     private func showFinishAlert(model: QuizResultsViewModel) {
         alertPresenter = AlertPresenter()
         alertPresenter?.delegate = self
@@ -237,7 +237,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
             self.moveToNextStep()
         }
     }
-        
+    
     private func convert(model: QuizQuestion) -> QuizStepViewModel {
         QuizStepViewModel(image: UIImage(data: model.image) ?? UIImage(),
                           question: model.text,

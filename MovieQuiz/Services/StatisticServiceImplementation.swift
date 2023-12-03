@@ -14,7 +14,7 @@ class StatisticServiceImplementation: StatisticService {
     init(store: StorageProtocol) {
         self.store = store
     }
-        
+    
     var totalAccuracy: Float {
         var result: Float = 0.0
         
@@ -33,7 +33,7 @@ class StatisticServiceImplementation: StatisticService {
             }
             result = totalPercentage
         }
-
+        
         return result
     }
     
