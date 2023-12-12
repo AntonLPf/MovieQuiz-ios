@@ -15,7 +15,6 @@ struct MoviesLoader: MoviesLoading {
     private let networkClient = NetworkClient()
     
     private var mostPopularMoviesUrl: URL {
-        let path = "https://imdb-api.com/en/API/Top250Movies/"
         let imdbKey = GlobalConstant.imdbApiKey
         
         guard let url = URL(string: "https://imdb-api.com/en/API/Top250Movies/" + imdbKey) else {
