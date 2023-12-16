@@ -14,6 +14,7 @@ class AlertPresenter: AlertPresenterProtocol {
         let alert = UIAlertController(title: model.title,
                                       message: model.message,
                                       preferredStyle: .alert)
+        alert.view.accessibilityIdentifier = "EndGameAlert"
         
         let action: UIAlertAction = switch model.type {
         case .result:
