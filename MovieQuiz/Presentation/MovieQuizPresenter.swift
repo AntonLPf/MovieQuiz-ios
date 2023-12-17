@@ -13,9 +13,19 @@ final class MovieQuizPresenter {
     
     private var currentQuestionIndex = 0
     
+    var correctAnswers = 0
+    
+    var questionFactory: QuestionFactoryProtocol?
+    
     var currentQuestion: QuizQuestion?
     
     weak var viewController: MovieQuizViewController?
+    
+    func restartQuiz() {
+        resetQuestionIndex()
+        correctAnswers = 0
+        questionFactory?.requestNextQuestion()
+    }
     
     func isQuizFinished() -> Bool {
         currentQuestionIndex == questionsAmount
@@ -36,24 +46,61 @@ final class MovieQuizPresenter {
     }
     
     func yesButtonClicked() {
-        handle(givenAnswer: true)
+        didAnswer(isYes: true)
     }
     
     func noButtonClicked() {
-        handle(givenAnswer: false)
+        didAnswer(isYes: false)
     }
     
+    func didReceiveNextQuestion(question: QuizQuestion?) {
+        guard let question else { return }
+        
+        currentQuestion = question
+        let viewModel = convert(model: question)
+        DispatchQueue.main.async { [weak self] in
+            self?.switchToNextQuestion()
+            self?.viewController?.show(quiz: viewModel)
+            self?.viewController?.enableButtons()
+        }
+    }
     
-    private func handle(givenAnswer: Bool) {
+    func moveToNextStep() {
+        
+        if isQuizFinished() {
+            showQuizResults()
+        } else {
+            moveToNextQuestion()
+        }
+    }
+    
+    private func showQuizResults() {
+        let resultRecord = GameRecord(correctAnswersCount: correctAnswers,
+                                      questionsCount: questionsAmount, date: Date())
+        
+        try? viewController?.storageService?.addNew(record: resultRecord)
+        
+        if let resultViewModel = viewController?.getResultViewModel(from: resultRecord) {
+            viewController?.showFinishAlert(model: resultViewModel)
+        }
+    }
+    
+    private func moveToNextQuestion() {
+        viewController?.showLoadingIndicator()
+        
+        questionFactory?.requestNextQuestion()
+    }
+    
+    private func didAnswer(isYes: Bool) {
         
         guard let currentQuestion else { return }
         
         viewController?.disableButtons()
         
-        let isCorrect = currentQuestion.correctAnswer == givenAnswer
+        let isCorrect = currentQuestion.correctAnswer == isYes
         
         if isCorrect {
-            viewController?.correctAnswers += 1
+            correctAnswers += 1
         }
         
         viewController?.showAnswerResult(isCorrect: isCorrect)
