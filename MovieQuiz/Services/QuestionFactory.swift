@@ -7,15 +7,24 @@
 
 import Foundation
 
+protocol QuestionFactoryProtocol {
+    
+    var delegate: QuestionFactoryDelegate? { get set }
+
+    func requestNextQuestion()
+    
+    func loadData()
+}
+
 class QuestionFactory: QuestionFactoryProtocol {
     
-    private let moviesLoader: MoviesLoading
+    private let moviesLoader: MoviesLoaderProtocol
     
-    private let imageLoader: ImageLoading
+    private let imageLoader: ImageLoaderProtocol
     
     weak var delegate: QuestionFactoryDelegate?
     
-    init(moviesLoader: MoviesLoading, imageLoader: ImageLoading, delegate: QuestionFactoryDelegate?) {
+    init(moviesLoader: MoviesLoaderProtocol, imageLoader: ImageLoaderProtocol, delegate: QuestionFactoryDelegate?) {
         self.moviesLoader = moviesLoader
         self.imageLoader = imageLoader
         self.delegate = delegate

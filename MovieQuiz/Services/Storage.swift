@@ -7,6 +7,14 @@
 
 import Foundation
 
+protocol StorageProtocol {
+    
+    func addNew(record: GameRecord) throws
+    
+    func loadDb() throws -> DataBase
+    
+}
+
 class Storage: StorageProtocol {
     
     private let userdeFaultsManager = UserDefaultsManager()

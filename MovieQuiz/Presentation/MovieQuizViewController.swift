@@ -30,7 +30,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     
     private var correctAnswers = 0
     
-    private var staticticService: StatisticService?
+    private var staticticService: StatisticServiceProtocol?
     
     private var storageService: StorageProtocol?
     
@@ -52,7 +52,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         
         self.storageService = storageService
         
-        staticticService = StatisticServiceImplementation(store: storageService)
+        staticticService = StatisticService(store: storageService)
         
         loadData()
     }
