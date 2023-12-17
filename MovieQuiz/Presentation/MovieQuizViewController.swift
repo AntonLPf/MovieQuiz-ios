@@ -22,7 +22,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         
     private var currentQuestion: QuizQuestion?
             
-    private var correctAnswers = 0
+    var correctAnswers = 0
     
     private var staticticService: StatisticServiceProtocol?
     
@@ -37,6 +37,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     override func viewDidLoad() {
         
         super.viewDidLoad()
+        
+        presenter.viewController = self
         
         imageView.layer.cornerRadius = 20
         
@@ -103,11 +105,13 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     // MARK: - Actions
     
     @IBAction private func noButtonClicked(_ sender: UIButton) {
-        handle(givenAnswer: false)
+        presenter.currentQuestion = currentQuestion
+        presenter.yesButtonClicked()
     }
     
     @IBAction private func yesButtonClicked(_ sender: UIButton) {
-        handle(givenAnswer: true)
+        presenter.currentQuestion = currentQuestion
+        presenter.noButtonClicked()
     }
     
     // MARK: - Methods
@@ -220,7 +224,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         showAnswerResult(isCorrect: isCorrect)
     }
     
-    private func showAnswerResult(isCorrect: Bool) {
+    func showAnswerResult(isCorrect: Bool) {
         imageView.layer.masksToBounds = true
         imageView.layer.borderWidth = 8
         imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
@@ -232,7 +236,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         }
     }
         
-    private func disableButtons() {
+    func disableButtons() {
         yesButton.isEnabled = false
         noButton.isEnabled = false
     }

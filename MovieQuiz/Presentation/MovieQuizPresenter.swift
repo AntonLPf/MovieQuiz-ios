@@ -13,6 +13,10 @@ final class MovieQuizPresenter {
     
     private var currentQuestionIndex = 0
     
+    var currentQuestion: QuizQuestion?
+    
+    weak var viewController: MovieQuizViewController?
+    
     func isQuizFinished() -> Bool {
         currentQuestionIndex == questionsAmount
     }
@@ -29,5 +33,29 @@ final class MovieQuizPresenter {
         QuizStepViewModel(image: UIImage(data: model.image) ?? UIImage(),
                           question: model.text,
                           questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
+    }
+    
+    func yesButtonClicked() {
+        handle(givenAnswer: true)
+    }
+    
+    func noButtonClicked() {
+        handle(givenAnswer: false)
+    }
+    
+    
+    private func handle(givenAnswer: Bool) {
+        
+        guard let currentQuestion else { return }
+        
+        viewController?.disableButtons()
+        
+        let isCorrect = currentQuestion.correctAnswer == givenAnswer
+        
+        if isCorrect {
+            viewController?.correctAnswers += 1
+        }
+        
+        viewController?.showAnswerResult(isCorrect: isCorrect)
     }
 }
