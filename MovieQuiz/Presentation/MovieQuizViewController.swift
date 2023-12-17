@@ -39,11 +39,11 @@ final class MovieQuizViewController: UIViewController, AlertPreseterDelegate {
     // MARK: - Actions
     
     @IBAction private func noButtonClicked(_ sender: UIButton) {
-        presenter.yesButtonClicked()
+        presenter.noButtonClicked()
     }
     
     @IBAction private func yesButtonClicked(_ sender: UIButton) {
-        presenter.noButtonClicked()
+        presenter.yesButtonClicked()
     }
     
     // MARK: - AlertPreseterDelegate
@@ -63,7 +63,6 @@ final class MovieQuizViewController: UIViewController, AlertPreseterDelegate {
     func didDismissQuestionLoadingErrorAlert() {
         presenter.moveToNextStep()
     }
-    
     
     func showFinishAlert(model: QuizResultsViewModel) {
         alertPresenter = AlertPresenter()

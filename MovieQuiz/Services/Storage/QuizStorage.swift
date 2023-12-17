@@ -1,5 +1,5 @@
 //
-//  Store.swift
+//  QuizStorage.swift
 //  MovieQuiz
 //
 //  Created by Антон Шишкин on 18.11.23.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-class Storage: QuizStorageProtocol {
+class QuizStorage: QuizStorageProtocol {
     
     private let storage: StorageForCodableProtocol!
     
@@ -16,9 +16,9 @@ class Storage: QuizStorageProtocol {
     }
     
     func addNew(record: GameRecord) throws {
-        var db = DataBase(records: [])
+        var db = QuizDataBase(records: [])
         
-        if let loadedDb = try? storage.load(key: Keys.dataBase.rawValue, DataBase.self) as? DataBase {
+        if let loadedDb = try? storage.load(key: Keys.dataBase.rawValue, QuizDataBase.self) as? QuizDataBase {
             db = loadedDb
         } else {
             print("Хранилище не найдено. Создание нового хранинища")
@@ -29,8 +29,8 @@ class Storage: QuizStorageProtocol {
         try storage.save(codable: db, key: Keys.dataBase.rawValue)
     }
     
-    func loadDb() throws -> DataBase {
-        guard let db = try storage.load(key: Keys.dataBase.rawValue, DataBase.self) as? DataBase else {
+    func loadDb() throws -> QuizDataBase {
+        guard let db = try storage.load(key: Keys.dataBase.rawValue, QuizDataBase.self) as? QuizDataBase else {
             let error = StoreError.failedToLoadDb
             print(error)
             throw StoreError.failedToLoadDb
@@ -44,7 +44,7 @@ class Storage: QuizStorageProtocol {
     
 }
 
-extension Storage {
+extension QuizStorage {
     
     enum StoreError: LocalizedError {
         case failedToSave

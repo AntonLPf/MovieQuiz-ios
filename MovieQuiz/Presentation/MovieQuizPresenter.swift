@@ -9,6 +9,7 @@ import UIKit
 
 final class MovieQuizPresenter: QuestionFactoryDelegate {
     private let staticticService: QuizStatisticServiceProtocol!
+    private let storage: QuizStorageProtocol!
     private var questionFactory: QuestionFactoryProtocol?
     private weak var viewController: MovieQuizViewController?
     
@@ -19,7 +20,8 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
     
     init(viewController: MovieQuizViewController) {
         self.viewController = viewController
-        self.staticticService = StatisticService(store: Storage())
+        self.staticticService = StatisticService()
+        self.storage = QuizStorage()
         self.questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), imageLoader: ImageLoader(), delegate: self)
         loadData()
     }
@@ -103,27 +105,25 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
                           questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
     }
     
-    private func getResultViewModel(from gameRecord: GameRecord) -> QuizResultsViewModel {
+    private func getResultViewModel(from quizStatistics: QuizStatistics) -> QuizResultsViewModel {
         var text = "Ваш результат: \(correctAnswers)/10"
         
-        let numberOfQuizes = staticticService?.gamesCount ?? 0
-        text += "\nКоличество сыгранных квизов: \(numberOfQuizes)"
+        text += "\nКоличество сыгранных квизов: \(quizStatistics.numberOfGames)"
         
-        if let bestResult = staticticService?.bestGame {
-            let numberOfCorrectAnswers = bestResult.correctAnswersCount
-            let numberOfqQuestions = bestResult.questionsCount
-            let dateString = getFormattedString(for: bestResult.date)
-            
-            text += "\nРекорд: \(numberOfCorrectAnswers)/\(numberOfqQuestions) (\(dateString))"
-        }
+        let bestResult = quizStatistics.bestGame
+        let numberOfCorrectAnswers = bestResult.correctAnswersCount
+        let numberOfqQuestions = bestResult.questionsCount
+        let dateString = getFormattedString(for: bestResult.date)
         
-        let averageAccuracy = staticticService?.totalAccuracy ?? 0.0
-        text += "\nСредняя точность: \(String(format: "%.2f", averageAccuracy))%"
+        text += "\nРекорд: \(numberOfCorrectAnswers)/\(numberOfqQuestions) (\(dateString))"
+        
+        text += "\nСредняя точность: \(String(format: "%.2f", quizStatistics.totalAccuracy))%"
         
         let viewModel = QuizResultsViewModel(
             title: "Этот раунд окончен!",
             text: text,
             buttonText: "Сыграть ещё раз")
+        
         return viewModel
     }
     
@@ -131,11 +131,15 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         let resultRecord = GameRecord(correctAnswersCount: correctAnswers,
                                       questionsCount: questionsAmount, date: Date())
         
-        try? staticticService.storage.addNew(record: resultRecord)
+        try? storage.addNew(record: resultRecord)
         
-        let resultViewModel = getResultViewModel(from: resultRecord)
-        
-        viewController?.showFinishAlert(model: resultViewModel)
+        if let quizDb = try? storage.loadDb() {
+            
+            let quizStatistics = staticticService.getQuizStatistics(from: quizDb)
+            let resultViewModel = getResultViewModel(from: quizStatistics)
+            
+            viewController?.showFinishAlert(model: resultViewModel)
+        }
         
     }
     

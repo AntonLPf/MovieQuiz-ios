@@ -11,6 +11,6 @@ protocol QuizStorageProtocol {
     
     func addNew(record: GameRecord) throws
     
-    func loadDb() throws -> DataBase
+    func loadDb() throws -> QuizDataBase
     
 }

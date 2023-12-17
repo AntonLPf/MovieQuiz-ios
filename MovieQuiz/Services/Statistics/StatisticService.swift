@@ -9,58 +9,47 @@ import Foundation
 
 class StatisticService: QuizStatisticServiceProtocol {
     
-    let storage: QuizStorageProtocol
-    
-    init(store: QuizStorageProtocol) {
-        self.storage = store
+    func getQuizStatistics(from database: QuizDataBase) -> QuizStatistics {
+        QuizStatistics(numberOfGames: getGamesCount(from: database),
+                       totalAccuracy: getTotalAccuracy(from: database),
+                       bestGame: getBestGame(from: database))
     }
-    
-    var totalAccuracy: Float {
+        
+    private func getTotalAccuracy(from database: QuizDataBase) -> Float {
+        
         var result: Float = 0.0
+        var quizPercentages: Set<Float> = []
         
-        if let db = try? storage.loadDb() {
-            var quizPercentages: Set<Float> = []
-            
-            for record in db.records {
-                quizPercentages.insert(record.accuracy)
-            }
-            
-            let totalRecords = db.records.count
-            
-            var totalPercentage: Float = 0.0
-            if totalRecords > 0 {
-                totalPercentage = quizPercentages.reduce(0, +) / Float(totalRecords)
-            }
-            result = totalPercentage
+        for record in database.records {
+            quizPercentages.insert(record.accuracy)
+        }
+        
+        let totalRecords = database.records.count
+        
+        if totalRecords > 0 {
+            result = quizPercentages.reduce(0, +) / Float(totalRecords)
         }
         
         return result
     }
     
-    var gamesCount: Int {
-        var result = 0
-        
-        if let db = try? storage.loadDb() {
-            result = db.records.count
-        }
-        
-        return result
+    private func getGamesCount(from database: QuizDataBase) -> Int {
+        database.records.count
     }
     
-    var bestGame: GameRecord {
+    private func getBestGame(from database: QuizDataBase) -> GameRecord {
         var result = GameRecord(correctAnswersCount: 0, questionsCount: 0, date: Date())
         
-        if let db = try? storage.loadDb(), var bestGame = db.records.first {
-            for game in db.records {
-                if game.accuracy > bestGame.accuracy {
-                    bestGame = game
-                }
+        guard var bestGame = database.records.first else { return result }
+        
+        for game in database.records {
+            if game.accuracy > bestGame.accuracy {
+                bestGame = game
             }
-            
-            result = bestGame
         }
         
-        return result
+        result = bestGame
         
-    }
+        return result
+    }    
 }

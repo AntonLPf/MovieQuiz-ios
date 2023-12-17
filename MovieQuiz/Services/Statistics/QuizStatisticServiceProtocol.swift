@@ -9,12 +9,6 @@ import Foundation
 
 protocol QuizStatisticServiceProtocol {
     
-    var totalAccuracy: Float { get }
-    
-    var gamesCount: Int { get }
-    
-    var bestGame: GameRecord { get }
-    
-    var storage: QuizStorageProtocol { get }
+    func getQuizStatistics(from database: QuizDataBase) -> QuizStatistics
     
 }
