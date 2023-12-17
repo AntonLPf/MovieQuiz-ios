@@ -7,19 +7,61 @@
 
 import UIKit
 
-final class MovieQuizPresenter {
+final class MovieQuizPresenter: QuestionFactoryDelegate {
     
     let questionsAmount = 10
     
-    private var currentQuestionIndex = 0
+    private var currentQuestionIndex: Int
     
-    var correctAnswers = 0
+    var correctAnswers: Int
+    
+    weak var viewController: MovieQuizViewController?
     
     var questionFactory: QuestionFactoryProtocol?
     
     var currentQuestion: QuizQuestion?
     
-    weak var viewController: MovieQuizViewController?
+    init(viewController: MovieQuizViewController) {
+        self.viewController = viewController
+        self.currentQuestionIndex = 0
+        self.correctAnswers = 0
+        self.questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), imageLoader: ImageLoader(), delegate: self)
+        loadData()
+    }
+    
+    // MARK: - QuestionFactoryDelegate
+        
+    func didReceiveNextQuestion(question: QuizQuestion?) {
+        guard let question else { return }
+        
+        currentQuestion = question
+        let viewModel = convert(model: question)
+        DispatchQueue.main.async { [weak self] in
+            self?.switchToNextQuestion()
+            self?.viewController?.show(quiz: viewModel)
+            self?.viewController?.enableButtons()
+        }
+    }
+    
+    func didLoadDataFromServer() {
+        viewController?.hideLoadingIndicator()
+        questionFactory?.requestNextQuestion()
+    }
+    
+    func didFailToLoadData(with error: Error) {
+        viewController?.hideLoadingIndicator()
+        viewController?.showNetworkError(message: error.localizedDescription, alertType: .networkError)
+    }
+    
+    func didFailLoadQuestion() {
+        viewController?.hideLoadingIndicator()
+        viewController?.showNetworkError(message: "Не удалось загрузить вопрос", alertType: .questionLoadingError)
+    }
+    
+    func loadData() {
+        viewController?.showLoadingIndicator()
+        questionFactory?.loadData()
+    }
     
     func restartQuiz() {
         resetQuestionIndex()
@@ -51,18 +93,6 @@ final class MovieQuizPresenter {
     
     func noButtonClicked() {
         didAnswer(isYes: false)
-    }
-    
-    func didReceiveNextQuestion(question: QuizQuestion?) {
-        guard let question else { return }
-        
-        currentQuestion = question
-        let viewModel = convert(model: question)
-        DispatchQueue.main.async { [weak self] in
-            self?.switchToNextQuestion()
-            self?.viewController?.show(quiz: viewModel)
-            self?.viewController?.enableButtons()
-        }
     }
     
     func moveToNextStep() {

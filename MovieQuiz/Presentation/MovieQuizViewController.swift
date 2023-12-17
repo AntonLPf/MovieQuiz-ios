@@ -1,6 +1,6 @@
 import UIKit
 
-final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, AlertPreseterDelegate {
+final class MovieQuizViewController: UIViewController, AlertPreseterDelegate {
     
     // MARK: - Outlets
     
@@ -18,7 +18,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     
     // MARK: - Properties
     
-    private let presenter = MovieQuizPresenter()
+    private var presenter: MovieQuizPresenter?
                         
     private var staticticService: StatisticServiceProtocol?
     
@@ -34,41 +34,15 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         
         super.viewDidLoad()
         
-        presenter.viewController = self
-        
-        presenter.questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), imageLoader: ImageLoader(), delegate: self)
-
+        self.presenter = MovieQuizPresenter(viewController: self)
+                
         imageView.layer.cornerRadius = 20
-        
 
         let storageService = Storage()
         
         self.storageService = storageService
         
         staticticService = StatisticService(store: storageService)
-        
-        loadData()
-    }
-    
-    // MARK: - QuestionFactoryDelegate
-        
-    func didReceiveNextQuestion(question: QuizQuestion?) {
-        presenter.didReceiveNextQuestion(question: question)
-    }
-    
-    func didLoadDataFromServer() {
-        hideLoadingIndicator()
-        presenter.questionFactory?.requestNextQuestion()
-    }
-    
-    func didFailToLoadData(with error: Error) {
-        hideLoadingIndicator()
-        showNetworkError(message: error.localizedDescription, alertType: .networkError)
-    }
-    
-    func didFailLoadQuestion() {
-        hideLoadingIndicator()
-        showNetworkError(message: "Не удалось загрузить вопрос", alertType: .questionLoadingError)
     }
     
     // MARK: - AlertPreseterDelegate
@@ -76,33 +50,33 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     private var alertPresenter: AlertPresenterProtocol?
     
     func didDismissResultAlert() {
-        presenter.restartQuiz()
+        presenter?.restartQuiz()
         enableButtons()
     }
     
     func didDismissNetworkErrorAlert() {
-        loadData()
-        presenter.restartQuiz()
+        presenter?.loadData()
+        presenter?.restartQuiz()
     }
     
     func didDismissQuestionLoadingErrorAlert() {
-        presenter.moveToNextStep()
+        presenter?.moveToNextStep()
     }
     
     // MARK: - Actions
     
     @IBAction private func noButtonClicked(_ sender: UIButton) {
-        presenter.yesButtonClicked()
+        presenter?.yesButtonClicked()
     }
     
     @IBAction private func yesButtonClicked(_ sender: UIButton) {
-        presenter.noButtonClicked()
+        presenter?.noButtonClicked()
     }
     
     // MARK: - Methods
     
     func getResultViewModel(from gameRecord: GameRecord) -> QuizResultsViewModel {
-        var text = "Ваш результат: \(presenter.correctAnswers)/10"
+        var text = "Ваш результат: \(presenter?.correctAnswers ?? 1)/10"
         
         let numberOfQuizes = staticticService?.gamesCount ?? 0
         text += "\nКоличество сыгранных квизов: \(numberOfQuizes)"
@@ -136,11 +110,6 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         return formattedString
     }
     
-    private func loadData() {
-        showLoadingIndicator()
-        presenter.questionFactory?.loadData()
-    }
-    
     func showFinishAlert(model: QuizResultsViewModel) {
         alertPresenter = AlertPresenter()
         alertPresenter?.delegate = self
@@ -171,7 +140,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
             
             guard let self = self else { return }
             
-            presenter.moveToNextStep()
+            presenter?.moveToNextStep()
         }
     }
         
@@ -195,7 +164,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         activityIndicator.stopAnimating()
     }
     
-    private func showNetworkError(message: String, alertType: AlertModel.AlertType) {
+    func showNetworkError(message: String, alertType: AlertModel.AlertType) {
         alertPresenter = AlertPresenter()
         alertPresenter?.delegate = self
         
