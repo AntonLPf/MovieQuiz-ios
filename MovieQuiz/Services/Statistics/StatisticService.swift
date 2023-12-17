@@ -7,23 +7,11 @@
 
 import Foundation
 
-protocol StatisticServiceProtocol {
+class StatisticService: QuizStatisticServiceProtocol {
     
-    var totalAccuracy: Float { get }
+    let storage: QuizStorageProtocol
     
-    var gamesCount: Int { get }
-    
-    var bestGame: GameRecord { get }
-    
-    var storage: StorageProtocol { get }
-    
-}
-
-class StatisticService: StatisticServiceProtocol {
-    
-    let storage: StorageProtocol
-    
-    init(store: StorageProtocol) {
+    init(store: QuizStorageProtocol) {
         self.storage = store
     }
     

@@ -8,32 +8,24 @@
 import UIKit
 
 final class MovieQuizPresenter: QuestionFactoryDelegate {
+    private let staticticService: QuizStatisticServiceProtocol!
+    private var questionFactory: QuestionFactoryProtocol?
+    private weak var viewController: MovieQuizViewController?
     
-    let questionsAmount = 10
-    
-    private var currentQuestionIndex: Int
-    
-    var correctAnswers: Int
-    
-    weak var viewController: MovieQuizViewController?
-    
-    private let staticticService: StatisticServiceProtocol!
-        
-    var questionFactory: QuestionFactoryProtocol?
-    
-    var currentQuestion: QuizQuestion?
+    private var currentQuestion: QuizQuestion?
+    private let questionsAmount = 10
+    private var currentQuestionIndex = 0
+    private var correctAnswers = 0
     
     init(viewController: MovieQuizViewController) {
         self.viewController = viewController
-        self.currentQuestionIndex = 0
-        self.correctAnswers = 0
         self.staticticService = StatisticService(store: Storage())
         self.questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), imageLoader: ImageLoader(), delegate: self)
         loadData()
     }
     
     // MARK: - QuestionFactoryDelegate
-        
+    
     func didReceiveNextQuestion(question: QuizQuestion?) {
         guard let question else { return }
         
@@ -61,6 +53,8 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         viewController?.showNetworkError(message: "Не удалось загрузить вопрос", alertType: .questionLoadingError)
     }
     
+    // MARK: - Methods
+    
     func loadData() {
         viewController?.showLoadingIndicator()
         questionFactory?.loadData()
@@ -84,12 +78,6 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         currentQuestionIndex += 1
     }
     
-    func convert(model: QuizQuestion) -> QuizStepViewModel {
-        QuizStepViewModel(image: UIImage(data: model.image) ?? UIImage(),
-                          question: model.text,
-                          questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
-    }
-    
     func yesButtonClicked() {
         didAnswer(isYes: true)
     }
@@ -107,6 +95,38 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         }
     }
     
+    // MARK: - Private methods
+    
+    private func convert(model: QuizQuestion) -> QuizStepViewModel {
+        QuizStepViewModel(image: UIImage(data: model.image) ?? UIImage(),
+                          question: model.text,
+                          questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
+    }
+    
+    private func getResultViewModel(from gameRecord: GameRecord) -> QuizResultsViewModel {
+        var text = "Ваш результат: \(correctAnswers)/10"
+        
+        let numberOfQuizes = staticticService?.gamesCount ?? 0
+        text += "\nКоличество сыгранных квизов: \(numberOfQuizes)"
+        
+        if let bestResult = staticticService?.bestGame {
+            let numberOfCorrectAnswers = bestResult.correctAnswersCount
+            let numberOfqQuestions = bestResult.questionsCount
+            let dateString = getFormattedString(for: bestResult.date)
+            
+            text += "\nРекорд: \(numberOfCorrectAnswers)/\(numberOfqQuestions) (\(dateString))"
+        }
+        
+        let averageAccuracy = staticticService?.totalAccuracy ?? 0.0
+        text += "\nСредняя точность: \(String(format: "%.2f", averageAccuracy))%"
+        
+        let viewModel = QuizResultsViewModel(
+            title: "Этот раунд окончен!",
+            text: text,
+            buttonText: "Сыграть ещё раз")
+        return viewModel
+    }
+    
     private func proceedToResults() {
         let resultRecord = GameRecord(correctAnswersCount: correctAnswers,
                                       questionsCount: questionsAmount, date: Date())
@@ -114,7 +134,7 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         try? staticticService.storage.addNew(record: resultRecord)
         
         let resultViewModel = getResultViewModel(from: resultRecord)
-            
+        
         viewController?.showFinishAlert(model: resultViewModel)
         
     }
@@ -140,30 +160,6 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         proceedWithAnswer(isCorrect: isCorrect)
     }
     
-    func getResultViewModel(from gameRecord: GameRecord) -> QuizResultsViewModel {
-        var text = "Ваш результат: \(correctAnswers)/10"
-        
-        let numberOfQuizes = staticticService?.gamesCount ?? 0
-        text += "\nКоличество сыгранных квизов: \(numberOfQuizes)"
-        
-        if let bestResult = staticticService?.bestGame {
-            let numberOfCorrectAnswers = bestResult.correctAnswersCount
-            let numberOfqQuestions = bestResult.questionsCount
-            let dateString = getFormattedString(for: bestResult.date)
-            
-            text += "\nРекорд: \(numberOfCorrectAnswers)/\(numberOfqQuestions) (\(dateString))"
-        }
-        
-        let averageAccuracy = staticticService?.totalAccuracy ?? 0.0
-        text += "\nСредняя точность: \(String(format: "%.2f", averageAccuracy))%"
-        
-        let viewModel = QuizResultsViewModel(
-            title: "Этот раунд окончен!",
-            text: text,
-            buttonText: "Сыграть ещё раз")
-        return viewModel
-    }
-    
     private func getFormattedString(for date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
@@ -173,7 +169,7 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         return formattedString
     }
     
-    func proceedWithAnswer(isCorrect: Bool) {
+    private func proceedWithAnswer(isCorrect: Bool) {
         viewController?.highlightImageBorder(isCorrectAnswer: isCorrect)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
@@ -183,5 +179,4 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
             moveToNextStep()
         }
     }
-
 }

@@ -2,6 +2,10 @@ import UIKit
 
 final class MovieQuizViewController: UIViewController, AlertPreseterDelegate {
     
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        return .lightContent
+    }
+    
     // MARK: - Outlets
     
     @IBOutlet private weak var imageView: UIImageView!
@@ -18,11 +22,7 @@ final class MovieQuizViewController: UIViewController, AlertPreseterDelegate {
     
     // MARK: - Properties
     
-    private var presenter: MovieQuizPresenter?
-    
-    override var preferredStatusBarStyle: UIStatusBarStyle {
-        return .lightContent
-    }
+    private var presenter: MovieQuizPresenter!
     
     // MARK: - Lifecycle
     
@@ -31,9 +31,19 @@ final class MovieQuizViewController: UIViewController, AlertPreseterDelegate {
         super.viewDidLoad()
         
         self.presenter = MovieQuizPresenter(viewController: self)
-                
+        
         imageView.layer.cornerRadius = 20
-
+        
+    }
+    
+    // MARK: - Actions
+    
+    @IBAction private func noButtonClicked(_ sender: UIButton) {
+        presenter.yesButtonClicked()
+    }
+    
+    @IBAction private func yesButtonClicked(_ sender: UIButton) {
+        presenter.noButtonClicked()
     }
     
     // MARK: - AlertPreseterDelegate
@@ -41,27 +51,20 @@ final class MovieQuizViewController: UIViewController, AlertPreseterDelegate {
     private var alertPresenter: AlertPresenterProtocol?
     
     func didDismissResultAlert() {
-        presenter?.restartQuiz()
+        presenter.restartQuiz()
         enableButtons()
     }
     
     func didDismissNetworkErrorAlert() {
-        presenter?.loadData()
-        presenter?.restartQuiz()
+        presenter.loadData()
+        presenter.restartQuiz()
     }
     
     func didDismissQuestionLoadingErrorAlert() {
-        presenter?.moveToNextStep()
+        presenter.moveToNextStep()
     }
     
-    @IBAction private func noButtonClicked(_ sender: UIButton) {
-        presenter?.yesButtonClicked()
-    }
     
-    @IBAction private func yesButtonClicked(_ sender: UIButton) {
-        presenter?.noButtonClicked()
-    }
-
     func showFinishAlert(model: QuizResultsViewModel) {
         alertPresenter = AlertPresenter()
         alertPresenter?.delegate = self
@@ -73,7 +76,7 @@ final class MovieQuizViewController: UIViewController, AlertPreseterDelegate {
         
         alertPresenter?.show(alertModel)
     }
-        
+    
     func show(quiz step: QuizStepViewModel) {
         hideLoadingIndicator()
         imageView.image = step.image
@@ -88,7 +91,7 @@ final class MovieQuizViewController: UIViewController, AlertPreseterDelegate {
         imageView.layer.borderWidth = 8
         imageView.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
     }
-        
+    
     func disableButtons() {
         yesButton.isEnabled = false
         noButton.isEnabled = false

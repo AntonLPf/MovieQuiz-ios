@@ -8,7 +8,7 @@
 import XCTest
 @testable import MovieQuiz
 
-struct StubNetworkClient: NetworkRouting {
+struct StubNetworkClient: NetworkRoutingProtocol {
     
     enum TestError: Error {
     case test

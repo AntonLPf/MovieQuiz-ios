@@ -7,22 +7,18 @@
 
 import Foundation
 
-protocol StorageProtocol {
+class Storage: QuizStorageProtocol {
     
-    func addNew(record: GameRecord) throws
+    private let storage: StorageForCodableProtocol!
     
-    func loadDb() throws -> DataBase
-    
-}
-
-class Storage: StorageProtocol {
-    
-    private let userdeFaultsManager = UserDefaultsManager()
+    init(storage: StorageForCodableProtocol = UserDefaultsManager()) {
+        self.storage = storage
+    }
     
     func addNew(record: GameRecord) throws {
         var db = DataBase(records: [])
         
-        if let loadedDb = try? userdeFaultsManager.load(key: Keys.dataBase.rawValue, DataBase.self) as? DataBase {
+        if let loadedDb = try? storage.load(key: Keys.dataBase.rawValue, DataBase.self) as? DataBase {
             db = loadedDb
         } else {
             print("Хранилище не найдено. Создание нового хранинища")
@@ -30,11 +26,11 @@ class Storage: StorageProtocol {
         
         db.records.append(record)
         
-        try userdeFaultsManager.save(codable: db, key: Keys.dataBase.rawValue)
+        try storage.save(codable: db, key: Keys.dataBase.rawValue)
     }
     
     func loadDb() throws -> DataBase {
-        guard let db = try userdeFaultsManager.load(key: Keys.dataBase.rawValue, DataBase.self) as? DataBase else {
+        guard let db = try storage.load(key: Keys.dataBase.rawValue, DataBase.self) as? DataBase else {
             let error = StoreError.failedToLoadDb
             print(error)
             throw StoreError.failedToLoadDb
