@@ -15,6 +15,8 @@ protocol StatisticServiceProtocol {
     
     var bestGame: GameRecord { get }
     
+    var storage: StorageProtocol { get }
+    
 }
 
 class StatisticService: StatisticServiceProtocol {

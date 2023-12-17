@@ -17,6 +17,8 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
     
     weak var viewController: MovieQuizViewController?
     
+    private let staticticService: StatisticServiceProtocol!
+        
     var questionFactory: QuestionFactoryProtocol?
     
     var currentQuestion: QuizQuestion?
@@ -25,6 +27,7 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         self.viewController = viewController
         self.currentQuestionIndex = 0
         self.correctAnswers = 0
+        self.staticticService = StatisticService(store: Storage())
         self.questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), imageLoader: ImageLoader(), delegate: self)
         loadData()
     }
@@ -98,24 +101,25 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
     func moveToNextStep() {
         
         if isQuizFinished() {
-            showQuizResults()
+            proceedToResults()
         } else {
-            moveToNextQuestion()
+            proceedToNextQuestion()
         }
     }
     
-    private func showQuizResults() {
+    private func proceedToResults() {
         let resultRecord = GameRecord(correctAnswersCount: correctAnswers,
                                       questionsCount: questionsAmount, date: Date())
         
-        try? viewController?.storageService?.addNew(record: resultRecord)
+        try? staticticService.storage.addNew(record: resultRecord)
         
-        if let resultViewModel = viewController?.getResultViewModel(from: resultRecord) {
-            viewController?.showFinishAlert(model: resultViewModel)
-        }
+        let resultViewModel = getResultViewModel(from: resultRecord)
+            
+        viewController?.showFinishAlert(model: resultViewModel)
+        
     }
     
-    private func moveToNextQuestion() {
+    private func proceedToNextQuestion() {
         viewController?.showLoadingIndicator()
         
         questionFactory?.requestNextQuestion()
@@ -133,6 +137,51 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
             correctAnswers += 1
         }
         
-        viewController?.showAnswerResult(isCorrect: isCorrect)
+        proceedWithAnswer(isCorrect: isCorrect)
     }
+    
+    func getResultViewModel(from gameRecord: GameRecord) -> QuizResultsViewModel {
+        var text = "Ваш результат: \(correctAnswers)/10"
+        
+        let numberOfQuizes = staticticService?.gamesCount ?? 0
+        text += "\nКоличество сыгранных квизов: \(numberOfQuizes)"
+        
+        if let bestResult = staticticService?.bestGame {
+            let numberOfCorrectAnswers = bestResult.correctAnswersCount
+            let numberOfqQuestions = bestResult.questionsCount
+            let dateString = getFormattedString(for: bestResult.date)
+            
+            text += "\nРекорд: \(numberOfCorrectAnswers)/\(numberOfqQuestions) (\(dateString))"
+        }
+        
+        let averageAccuracy = staticticService?.totalAccuracy ?? 0.0
+        text += "\nСредняя точность: \(String(format: "%.2f", averageAccuracy))%"
+        
+        let viewModel = QuizResultsViewModel(
+            title: "Этот раунд окончен!",
+            text: text,
+            buttonText: "Сыграть ещё раз")
+        return viewModel
+    }
+    
+    private func getFormattedString(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        
+        let formattedString = formatter.string(from: date)
+        return formattedString
+    }
+    
+    func proceedWithAnswer(isCorrect: Bool) {
+        viewController?.highlightImageBorder(isCorrectAnswer: isCorrect)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            
+            guard let self = self else { return }
+            
+            moveToNextStep()
+        }
+    }
+
 }
