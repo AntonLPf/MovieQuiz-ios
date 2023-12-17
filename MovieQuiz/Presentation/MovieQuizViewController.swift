@@ -18,16 +18,10 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     
     // MARK: - Properties
     
-    private let questionsAmount = 10
-    
+    private let presenter = MovieQuizPresenter()
+        
     private var currentQuestion: QuizQuestion?
-    
-    private var currentQuestionIndex = 0
-    
-    private var isQuizFinished: Bool {
-        currentQuestionIndex == questionsAmount
-    }
-    
+            
     private var correctAnswers = 0
     
     private var staticticService: StatisticServiceProtocol?
@@ -65,9 +59,9 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         guard let question else { return }
         
         currentQuestion = question
-        let viewModel = convert(model: question)
+        let viewModel = presenter.convert(model: question)
         DispatchQueue.main.async { [weak self] in
-            self?.currentQuestionIndex += 1
+            self?.presenter.switchToNextQuestion()
             self?.show(quiz: viewModel)
             self?.enableButtons()
         }
@@ -160,16 +154,16 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     
     private func moveToNextStep() {
         
-        guard !isQuizFinished else {
+        if presenter.isQuizFinished() {
             showQuizResults()
-            return
+        } else {
+            moveToNextQuestion()
         }
-        
-        moveToNextQuestion()
     }
     
     private func showQuizResults() {
-        let resultRecord = GameRecord(correctAnswersCount: correctAnswers, questionsCount: questionsAmount, date: Date())
+        let resultRecord = GameRecord(correctAnswersCount: correctAnswers, 
+                                      questionsCount: presenter.questionsAmount, date: Date())
         
         try? storageService?.addNew(record: resultRecord)
         
@@ -197,7 +191,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     }
     
     private func restartQuiz() {
-        currentQuestionIndex = 0
+        presenter.resetQuestionIndex()
         correctAnswers = 0
         questionFactory?.requestNextQuestion()
     }
@@ -237,13 +231,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
             self.moveToNextStep()
         }
     }
-    
-    private func convert(model: QuizQuestion) -> QuizStepViewModel {
-        QuizStepViewModel(image: UIImage(data: model.image) ?? UIImage(),
-                          question: model.text,
-                          questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
-    }
-    
+        
     private func disableButtons() {
         yesButton.isEnabled = false
         noButton.isEnabled = false
