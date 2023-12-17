@@ -11,14 +11,14 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
     private let staticticService: QuizStatisticServiceProtocol!
     private let storage: QuizStorageProtocol!
     private var questionFactory: QuestionFactoryProtocol?
-    private weak var viewController: MovieQuizViewController?
+    private weak var viewController: MovieQuizViewControllerProtocol?
     
     private var currentQuestion: QuizQuestion?
     private let questionsAmount = 10
     private var currentQuestionIndex = 0
     private var correctAnswers = 0
     
-    init(viewController: MovieQuizViewController) {
+    init(viewController: MovieQuizViewControllerProtocol) {
         self.viewController = viewController
         self.staticticService = StatisticService()
         self.storage = QuizStorage()
@@ -99,7 +99,7 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
     
     // MARK: - Private methods
     
-    private func convert(model: QuizQuestion) -> QuizStepViewModel {
+    func convert(model: QuizQuestion) -> QuizStepViewModel {
         QuizStepViewModel(image: UIImage(data: model.image) ?? UIImage(),
                           question: model.text,
                           questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")

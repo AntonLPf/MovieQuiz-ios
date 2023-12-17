@@ -1,6 +1,6 @@
 import UIKit
 
-final class MovieQuizViewController: UIViewController, AlertPreseterDelegate {
+final class MovieQuizViewController: UIViewController, AlertPreseterDelegate, MovieQuizViewControllerProtocol {
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
@@ -63,6 +63,8 @@ final class MovieQuizViewController: UIViewController, AlertPreseterDelegate {
     func didDismissQuestionLoadingErrorAlert() {
         presenter.moveToNextStep()
     }
+    
+    // MARK: - Methods
     
     func showFinishAlert(model: QuizResultsViewModel) {
         alertPresenter = AlertPresenter()
