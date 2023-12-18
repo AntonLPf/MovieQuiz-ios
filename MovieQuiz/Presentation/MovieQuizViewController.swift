@@ -73,7 +73,7 @@ final class MovieQuizViewController: UIViewController, AlertPreseterDelegate, Mo
         let alertModel = AlertModel(title: model.title,
                                     message: model.text,
                                     buttonText: model.buttonText,
-                                    type: .result) { }
+                                    type: .quizResult) { }
         
         alertPresenter?.show(alertModel)
     }

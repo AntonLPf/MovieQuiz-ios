@@ -19,8 +19,8 @@ struct AlertModel {
     
     let completion: () -> ()
     
-    enum AlertType {
-        case result
+    enum AlertType: String {
+        case quizResult
         case networkError
         case questionLoadingError
     }

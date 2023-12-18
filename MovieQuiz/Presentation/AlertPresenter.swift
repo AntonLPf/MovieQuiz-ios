@@ -14,10 +14,10 @@ class AlertPresenter: AlertPresenterProtocol {
         let alert = UIAlertController(title: model.title,
                                       message: model.message,
                                       preferredStyle: .alert)
-        alert.view.accessibilityIdentifier = "Game results"
+        alert.view.accessibilityIdentifier = model.type.rawValue
         
         let action: UIAlertAction = switch model.type {
-        case .result:
+        case .quizResult:
             UIAlertAction(title: model.buttonText, style: .default) { _ in
                 self.delegate?.didDismissResultAlert()
             }
