@@ -8,10 +8,8 @@
 import Foundation
 
 protocol MovieQuizViewControllerProtocol: AnyObject {
-    
-    func showFinishAlert(model: QuizResultsViewModel)
-    
-    func show(quiz step: QuizStepViewModel)
+
+    func show(question: QuizQuestionViewModel)
     
     func highlightImageBorder(isCorrectAnswer: Bool)
     
@@ -23,5 +21,5 @@ protocol MovieQuizViewControllerProtocol: AnyObject {
     
     func hideLoadingIndicator()
     
-    func showNetworkError(message: String, alertType: AlertModel.AlertType)
+    func showAlert(model: AlertModel)
 }

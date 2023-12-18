@@ -9,11 +9,12 @@ import XCTest
 @testable import MovieQuiz
 
 final class MovieQuizViewControllerMock: MovieQuizViewControllerProtocol {
-    func showFinishAlert(model: MovieQuiz.QuizResultsViewModel) {
+    
+    func showAlert(model: MovieQuiz.AlertModel) {
         
     }
     
-    func show(quiz step: MovieQuiz.QuizStepViewModel) {
+    func show(question: QuizQuestionViewModel) {
         
     }
     
@@ -34,10 +35,6 @@ final class MovieQuizViewControllerMock: MovieQuizViewControllerProtocol {
     }
     
     func hideLoadingIndicator() {
-        
-    }
-    
-    func showNetworkError(message: String, alertType: MovieQuiz.AlertModel.AlertType) {
         
     }
 }
@@ -64,8 +61,8 @@ final class MovieQuizPresenterTests: XCTestCase {
         let viewModel = sut.convert(model: question)
         
         XCTAssertNotNil(viewModel.image)
-        XCTAssertEqual(viewModel.question, "Question text")
-        XCTAssertEqual(viewModel.questionNumber, "1/10")
+        XCTAssertEqual(viewModel.text, "Question text")
+        XCTAssertEqual(viewModel.number, "1/10")
         
     }
 }

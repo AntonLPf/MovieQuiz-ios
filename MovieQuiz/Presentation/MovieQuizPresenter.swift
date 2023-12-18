@@ -32,10 +32,10 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         guard let question else { return }
         
         currentQuestion = question
-        let viewModel = convert(model: question)
+        let questionViewModel = convert(model: question)
         DispatchQueue.main.async { [weak self] in
             self?.switchToNextQuestion()
-            self?.viewController?.show(quiz: viewModel)
+            self?.viewController?.show(question: questionViewModel)
             self?.viewController?.enableButtons()
         }
     }
@@ -47,12 +47,14 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
     
     func didFailToLoadData(with error: Error) {
         viewController?.hideLoadingIndicator()
-        viewController?.showNetworkError(message: error.localizedDescription, alertType: .networkError)
+        let alertModel = getInterruptionAlertModel(message: error.localizedDescription, reason: .quizLoadingError)
+        viewController?.showAlert(model: alertModel)
     }
     
     func didFailLoadQuestion() {
         viewController?.hideLoadingIndicator()
-        viewController?.showNetworkError(message: "Не удалось загрузить вопрос", alertType: .questionLoadingError)
+        let alertModel = getInterruptionAlertModel(message: "Не удалось загрузить вопрос", reason: .questionLoadingError)
+        viewController?.showAlert(model: alertModel)
     }
     
     // MARK: - Methods
@@ -96,16 +98,30 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
             proceedToNextQuestion()
         }
     }
+        
+    func convert(model: QuizQuestion) -> QuizQuestionViewModel {
+        QuizQuestionViewModel(image: UIImage(data: model.image) ?? UIImage(),
+                          text: model.text,
+                          number: "\(currentQuestionIndex + 1)/\(questionsAmount)")
+    }
     
     // MARK: - Private methods
     
-    func convert(model: QuizQuestion) -> QuizStepViewModel {
-        QuizStepViewModel(image: UIImage(data: model.image) ?? UIImage(),
-                          question: model.text,
-                          questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
+    private func getInterruptionAlertModel(message: String, reason: QuizInterruptionReason) -> AlertModel {
+        var alertModel = AlertModel(title: "Ошибка",
+                   message: message,
+                   buttonText: "Попробовать ещё раз", type: .quizLoadingError) {}
+        
+        switch reason {
+        case .quizLoadingError:
+            alertModel.type = .quizLoadingError
+        case .questionLoadingError:
+            alertModel.type = .questionLoadingError
+        }
+        return alertModel
     }
-    
-    private func getResultViewModel(from quizStatistics: QuizStatistics) -> QuizResultsViewModel {
+            
+    private func getResultAlertModel(from quizStatistics: QuizStatistics) -> AlertModel {
         var text = "Ваш результат: \(correctAnswers)/10"
         
         text += "\nКоличество сыгранных квизов: \(quizStatistics.numberOfGames)"
@@ -118,15 +134,16 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         text += "\nРекорд: \(numberOfCorrectAnswers)/\(numberOfqQuestions) (\(dateString))"
         
         text += "\nСредняя точность: \(String(format: "%.2f", quizStatistics.totalAccuracy))%"
-        
-        let viewModel = QuizResultsViewModel(
-            title: "Этот раунд окончен!",
-            text: text,
-            buttonText: "Сыграть ещё раз")
+                
+        let viewModel = AlertModel(title: "Этот раунд окончен!",
+                                   message: text,
+                                   buttonText: "Сыграть ещё раз",
+                                   type: .quizResult,
+                                   completion: {})
         
         return viewModel
     }
-    
+        
     private func proceedToResults() {
         let resultRecord = GameRecord(correctAnswersCount: correctAnswers,
                                       questionsCount: questionsAmount, date: Date())
@@ -136,9 +153,9 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         if let quizDb = try? storage.loadDb() {
             
             let quizStatistics = staticticService.getQuizStatistics(from: quizDb)
-            let resultViewModel = getResultViewModel(from: quizStatistics)
+            let resultAlertViewModel = getResultAlertModel(from: quizStatistics)
             
-            viewController?.showFinishAlert(model: resultViewModel)
+            viewController?.showAlert(model: resultAlertViewModel)
         }
         
     }
@@ -182,5 +199,10 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
             
             moveToNextStep()
         }
+    }
+    
+    enum QuizInterruptionReason {
+        case quizLoadingError
+        case questionLoadingError
     }
 }

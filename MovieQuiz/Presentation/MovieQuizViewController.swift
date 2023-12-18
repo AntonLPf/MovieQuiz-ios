@@ -1,10 +1,6 @@
 import UIKit
 
-final class MovieQuizViewController: UIViewController, AlertPreseterDelegate, MovieQuizViewControllerProtocol {
-    
-    override var preferredStatusBarStyle: UIStatusBarStyle {
-        return .lightContent
-    }
+final class MovieQuizViewController: UIViewController, MovieQuizViewControllerProtocol {
     
     // MARK: - Outlets
     
@@ -23,6 +19,10 @@ final class MovieQuizViewController: UIViewController, AlertPreseterDelegate, Mo
     // MARK: - Properties
     
     private var presenter: MovieQuizPresenter!
+    
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        return .lightContent
+    }
     
     // MARK: - Lifecycle
     
@@ -46,43 +46,13 @@ final class MovieQuizViewController: UIViewController, AlertPreseterDelegate, Mo
         presenter.yesButtonClicked()
     }
     
-    // MARK: - AlertPreseterDelegate
-    
-    private var alertPresenter: AlertPresenterProtocol?
-    
-    func didDismissResultAlert() {
-        presenter.restartQuiz()
-        enableButtons()
-    }
-    
-    func didDismissNetworkErrorAlert() {
-        presenter.loadData()
-        presenter.restartQuiz()
-    }
-    
-    func didDismissQuestionLoadingErrorAlert() {
-        presenter.moveToNextStep()
-    }
-    
     // MARK: - Methods
     
-    func showFinishAlert(model: QuizResultsViewModel) {
-        alertPresenter = AlertPresenter()
-        alertPresenter?.delegate = self
-        
-        let alertModel = AlertModel(title: model.title,
-                                    message: model.text,
-                                    buttonText: model.buttonText,
-                                    type: .quizResult) { }
-        
-        alertPresenter?.show(alertModel)
-    }
-    
-    func show(quiz step: QuizStepViewModel) {
+    func show(question: QuizQuestionViewModel) {
         hideLoadingIndicator()
-        imageView.image = step.image
-        textLabel.text = step.question
-        counterLabel.text = step.questionNumber
+        imageView.image = question.image
+        textLabel.text = question.text
+        counterLabel.text = question.number
         imageView.layer.borderWidth = 0
         enableButtons()
     }
@@ -113,14 +83,33 @@ final class MovieQuizViewController: UIViewController, AlertPreseterDelegate, Mo
         activityIndicator.stopAnimating()
     }
     
-    func showNetworkError(message: String, alertType: AlertModel.AlertType) {
-        alertPresenter = AlertPresenter()
-        alertPresenter?.delegate = self
+    func showAlert(model: AlertModel) {
+        let alert = UIAlertController(title: model.title,
+                                      message: model.message,
+                                      preferredStyle: .alert)
+        alert.view.accessibilityIdentifier = model.type.rawValue
         
-        let alertModel = AlertModel(title: "Ошибка",
-                                    message: message,
-                                    buttonText: "Попробовать ещё раз", type: alertType) {}
+        let action: UIAlertAction = switch model.type {
+        case .quizResult:
+            UIAlertAction(title: model.buttonText, style: .default) { _ in
+                self.presenter.restartQuiz()
+                self.enableButtons()
+            }
+        case .quizLoadingError:
+            UIAlertAction(title: model.buttonText, style: .default) { _ in
+                self.presenter.loadData()
+                self.presenter.restartQuiz()
+            }
+        case .questionLoadingError:
+            UIAlertAction(title: model.buttonText, style: .default) { _ in
+                self.presenter.moveToNextStep()
+            }
+        }
         
-        alertPresenter?.show(alertModel)
+        alert.addAction(action)
+        
+        present(alert, animated: true) {
+            model.completion()
+        }
     }
 }
