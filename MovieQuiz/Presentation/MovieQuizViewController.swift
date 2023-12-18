@@ -108,8 +108,6 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         
         alert.addAction(action)
         
-        present(alert, animated: true) {
-            model.completion()
-        }
+        present(alert, animated: true, completion: nil)
     }
 }

@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class MovieQuizPresenter: QuestionFactoryDelegate {
+final class MovieQuizPresenter {
     private let staticticService: QuizStatisticServiceProtocol!
     private let storage: QuizStorageProtocol!
     private var questionFactory: QuestionFactoryProtocol?
@@ -24,37 +24,6 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         self.storage = QuizStorage()
         self.questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), imageLoader: ImageLoader(), delegate: self)
         loadData()
-    }
-    
-    // MARK: - QuestionFactoryDelegate
-    
-    func didReceiveNextQuestion(question: QuizQuestion?) {
-        guard let question else { return }
-        
-        currentQuestion = question
-        let questionViewModel = convert(model: question)
-        DispatchQueue.main.async { [weak self] in
-            self?.switchToNextQuestion()
-            self?.viewController?.show(question: questionViewModel)
-            self?.viewController?.enableButtons()
-        }
-    }
-    
-    func didLoadDataFromServer() {
-        viewController?.hideLoadingIndicator()
-        questionFactory?.requestNextQuestion()
-    }
-    
-    func didFailToLoadData(with error: Error) {
-        viewController?.hideLoadingIndicator()
-        let alertModel = getInterruptionAlertModel(message: error.localizedDescription, reason: .quizLoadingError)
-        viewController?.showAlert(model: alertModel)
-    }
-    
-    func didFailLoadQuestion() {
-        viewController?.hideLoadingIndicator()
-        let alertModel = getInterruptionAlertModel(message: "Не удалось загрузить вопрос", reason: .questionLoadingError)
-        viewController?.showAlert(model: alertModel)
     }
     
     // MARK: - Methods
@@ -98,19 +67,25 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
             proceedToNextQuestion()
         }
     }
-        
+    
     func convert(model: QuizQuestion) -> QuizQuestionViewModel {
-        QuizQuestionViewModel(image: UIImage(data: model.image) ?? UIImage(),
-                          text: model.text,
-                          number: "\(currentQuestionIndex + 1)/\(questionsAmount)")
+        
+        let image = UIImage(data: model.image) ?? UIImage()
+        let text = model.text
+        let number = "\(currentQuestionIndex + 1)/\(questionsAmount)"
+        
+        let vm = QuizQuestionViewModel(image: image, text: text, number: number)
+        
+        return vm
     }
     
     // MARK: - Private methods
     
     private func getInterruptionAlertModel(message: String, reason: QuizInterruptionReason) -> AlertModel {
         var alertModel = AlertModel(title: "Ошибка",
-                   message: message,
-                   buttonText: "Попробовать ещё раз", type: .quizLoadingError) {}
+                                    message: message,
+                                    buttonText: "Попробовать ещё раз", 
+                                    type: .quizLoadingError)
         
         switch reason {
         case .quizLoadingError:
@@ -120,7 +95,7 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         }
         return alertModel
     }
-            
+    
     private func getResultAlertModel(from quizStatistics: QuizStatistics) -> AlertModel {
         var text = "Ваш результат: \(correctAnswers)/10"
         
@@ -134,16 +109,15 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         text += "\nРекорд: \(numberOfCorrectAnswers)/\(numberOfqQuestions) (\(dateString))"
         
         text += "\nСредняя точность: \(String(format: "%.2f", quizStatistics.totalAccuracy))%"
-                
+        
         let viewModel = AlertModel(title: "Этот раунд окончен!",
                                    message: text,
                                    buttonText: "Сыграть ещё раз",
-                                   type: .quizResult,
-                                   completion: {})
+                                   type: .quizResult)
         
         return viewModel
     }
-        
+    
     private func proceedToResults() {
         let resultRecord = GameRecord(correctAnswersCount: correctAnswers,
                                       questionsCount: questionsAmount, date: Date())
@@ -205,4 +179,37 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         case quizLoadingError
         case questionLoadingError
     }
+}
+
+extension MovieQuizPresenter: QuestionFactoryDelegate {
+    
+    func didReceiveNextQuestion(question: QuizQuestion?) {
+        guard let question else { return }
+        
+        currentQuestion = question
+        let questionViewModel = convert(model: question)
+        DispatchQueue.main.async { [weak self] in
+            self?.switchToNextQuestion()
+            self?.viewController?.show(question: questionViewModel)
+            self?.viewController?.enableButtons()
+        }
+    }
+    
+    func didLoadDataFromServer() {
+        viewController?.hideLoadingIndicator()
+        questionFactory?.requestNextQuestion()
+    }
+    
+    func didFailToLoadData(with error: Error) {
+        viewController?.hideLoadingIndicator()
+        let alertModel = getInterruptionAlertModel(message: error.localizedDescription, reason: .quizLoadingError)
+        viewController?.showAlert(model: alertModel)
+    }
+    
+    func didFailLoadQuestion() {
+        viewController?.hideLoadingIndicator()
+        let alertModel = getInterruptionAlertModel(message: "Не удалось загрузить вопрос", reason: .questionLoadingError)
+        viewController?.showAlert(model: alertModel)
+    }
+    
 }
