@@ -7,11 +7,7 @@
 
 import Foundation
 
-protocol ImageLoading {
-    func loadImageData(for movie: MostPopularMovie) throws -> Data
-}
-
-struct ImageLoader: ImageLoading {
+struct ImageLoader: ImageLoaderProtocol {
     
     private let networkClient = NetworkClient()
     

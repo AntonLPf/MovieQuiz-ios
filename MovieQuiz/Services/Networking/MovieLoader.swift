@@ -7,15 +7,15 @@
 
 import Foundation
 
-protocol MoviesLoading {
-    func loadMovies(handler: @escaping (Result<MostPopularMovies, Error>) -> Void)
-}
-
-struct MoviesLoader: MoviesLoading {
-    private let networkClient = NetworkClient()
+struct MoviesLoader: MoviesLoaderProtocol {
+    
+    private let networkClient: NetworkRoutingProtocol
+      
+    init(networkClient: NetworkRoutingProtocol = NetworkClient()) {
+        self.networkClient = networkClient
+    }
     
     private var mostPopularMoviesUrl: URL {
-        let path = "https://imdb-api.com/en/API/Top250Movies/"
         let imdbKey = GlobalConstant.imdbApiKey
         
         guard let url = URL(string: "https://imdb-api.com/en/API/Top250Movies/" + imdbKey) else {

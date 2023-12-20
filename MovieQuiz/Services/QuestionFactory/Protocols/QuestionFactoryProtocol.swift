@@ -2,7 +2,7 @@
 //  QuestionFactoryProtocol.swift
 //  MovieQuiz
 //
-//  Created by Антон Шишкин on 16.11.23.
+//  Created by Антон Шишкин on 17.12.23.
 //
 
 import Foundation

@@ -7,7 +7,7 @@
 
 import Foundation
 
-class UserDefaultsManager {
+class UserDefaultsManager: StorageForCodableProtocol {
     
     enum UserDefaultsManagerError: Error, LocalizedError {
         case encodingError

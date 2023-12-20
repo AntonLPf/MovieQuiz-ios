@@ -7,6 +7,6 @@
 
 import Foundation
 
-struct DataBase: Codable {
+struct QuizDataBase: Codable {
     var records: [GameRecord]
 }
